@@ -22,7 +22,7 @@ You want basic egress monitoring on your Ubuntu servers. Simple question: "What'
 - Runs on the box you want to monitor
 - Shows you egress connections in a way humans can read
 - Doesn't require external infrastructure, databases, or cloud accounts
-- Does one thing without bringing along 47 dependencies and a PhD
+- Does one thing without bringing along 47 dependencies or requiring a PhD
 
 ### The Real Reason
 
@@ -30,11 +30,21 @@ It was a fun side project that took an afternoon instead of spending three days 
 
 Sometimes the best tool is the one you actually finish and use.
 
+## How It Works
+
+See [DESIGN.md](./DESIGN.md) for the full technical design and rationale.
+
+**TL;DR:**
+- **Agent** logs DNS (via dnsmasq) and IP egress (via iptables)
+- Cron jobs consolidate logs into two compact files (`unique-domains.log`, `unique-ips.log`)
+- **Collector** fetches these files and analyzes for anomalies
+- No packet captures, no databases, just smart log aggregation
+
 ## Requirements
 
 ### Agent dependencies
 
-- `dnsmasq` (for logging DNS queries)
+- `dnsmasq` (installed automatically if missing)
 - `iptables` (for logging egress traffic)
 - `journalctl` (for logging network activity)
 - `cron` (for running the consolidation script)
@@ -59,15 +69,15 @@ Currently the repo isn't built and released, so both modes require a git clone.
 - `git clone https://github.com/alexmorleyfinch/egress-monitor.git`
 - `cd egress-monitor/`
 - `git pull` - if you want to update
-- `./src/agent/install.sh` - idempotent install script
-- `./src/agent/uninstall.sh` - idempotent uninstall script
+- `sudo ./src/agent/install.sh` - idempotent install script
+- `sudo ./src/agent/uninstall.sh` - idempotent uninstall script
 
 ### Collector deployment (local machine)
 
 - `git clone https://github.com/alexmorleyfinch/egress-monitor.git`
 - `cd egress-monitor/`
 - `git pull` - if you want to update
-- `./src/collector/install.sh` - idempotent install script (checks commands exist like `curl`, `dig`, `jq` etc)
+- `sudo ./src/collector/install.sh` - idempotent install script (checks commands exist like `curl`, `dig`, `jq` etc)
 
 ### Collecting logs from the agent (from the collector)
 
@@ -89,4 +99,8 @@ Get identification information for a specific domain or IP:
 
 ## TODO
 
-- Maybe one day we'll make a tarball or something
+- [Low] Installation via git clone is a pain, make a release
+
+## Known issues
+
+- [Med] Timestamps in domain logs are inconsistent with the IP logs
