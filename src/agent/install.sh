@@ -23,6 +23,7 @@ chown root:root "$ROOT_DIR"
 # =============================== Install "unique-ips" ===============================
 source "$SCRIPT_DIR/unique-ips/setup.sh" # load function `install_unique_ips`
 install_unique_ips \
+    "$SCRIPT_DIR/unique-ips" \
     "$ROOT_DIR/unique-ips.cursor" \
     "$ROOT_DIR/unique-ips.log"
 
@@ -30,6 +31,7 @@ install_unique_ips \
 # ============================= Install "unique-domains" =============================
 source "$SCRIPT_DIR/unique-domains/setup.sh" # load function `install_unique_domains`
 install_unique_domains \
+    "$SCRIPT_DIR/unique-domains" \
     "$ROOT_DIR/unique-domains.cursor" \
     "$ROOT_DIR/unique-domains.log"
 
