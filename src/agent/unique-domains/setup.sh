@@ -22,12 +22,32 @@ install_unique_domains() {
         apt-get update -qq
         apt-get install -y dnsmasq
     fi
+    
+    # Configure systemd-resolved to not bind to port 53
+    echo "Configuring systemd-resolved to release port 53..."
+    mkdir -p /etc/systemd/resolved.conf.d
+    cat > /etc/systemd/resolved.conf.d/dnsmasq.conf << EOF
+[Resolve]
+DNSStubListener=no
+EOF
+
+    # Restart systemd-resolved to apply changes
+    systemctl restart systemd-resolved
+
+    # Backup current resolv.conf before overwriting
+    cp /etc/resolv.conf /etc/resolv.conf.backup
+
+    # Update /etc/resolv.conf to point to dnsmasq
+    echo "nameserver 127.0.0.1" > /etc/resolv.conf
 
     # Configure dnsmasq for query logging
     cat > "$DNSMASQ_CONF" << EOF
 # Egress monitoring - log all DNS queries
 log-queries
 log-facility=$DNSMASQ_LOG
+
+# Use original upstream nameservers
+resolv-file=/etc/resolv.conf.backup
 EOF
 
     # Create log file
@@ -102,6 +122,17 @@ uninstall_unique_domains() {
             systemctl restart dnsmasq
         fi
     fi
+
+    # Restore systemd-resolved configuration
+    rm -f /etc/systemd/resolved.conf.d/dnsmasq.conf
+    systemctl restart systemd-resolved
+
+    # Restore resolv.conf symlink
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+
+    # Clean up backup
+    rm -f /etc/resolv.conf.backup
 
     # Remove log file
     rm -f "$DNSMASQ_LOG"
