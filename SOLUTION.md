@@ -53,3 +53,14 @@ Two sides:
 - Code that runs on the server, constantly populating the two files
 - Code that runs on another host, periodically fetching the two files, analyzing them and alerting if something is wrong.
 
+```
+# Executable (have shebang, meant to be run):
+consolidate.sh      ✓
+install.sh          ✓
+uninstall.sh        ✓
+
+# Not executable (sourced, not run):
+cursor.sh           ✗ (sourced by consolidate.sh)
+setup.sh            ✗ (sourced by install.sh)
+```
+
