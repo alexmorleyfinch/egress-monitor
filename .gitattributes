@@ -1,2 +1,2 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+* text=auto eol=lf
+*.{png,jpg,jpeg,gif,ico,pdf,zip,tar,gz,woff,woff2,ttf,eot,mp4,mov,mp3,wav} binary
