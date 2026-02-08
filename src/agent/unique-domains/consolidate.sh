@@ -31,7 +31,7 @@ get_from_cursor() {
             # Process query lines
             /query\[/ && !/query\[PTR\]/ {
                 # Extract timestamp
-                timestamp = $1 " " $2 " " $3
+                timestamp = $1 "-" $2 "-" $3
                 
                 # Extract domain
                 for(i=4; i<=NF; i++) {
