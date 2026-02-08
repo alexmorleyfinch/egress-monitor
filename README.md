@@ -12,10 +12,10 @@ You want basic egress monitoring on your Ubuntu servers. Simple question: "What'
 
 ### Why Not Existing Tools?
 
-- __Enterprise solutions__ (Datadog, New Relic, etc.) - Overkill for simple egress visibility. You're not monitoring a fleet of 500 servers, you just want to see outbound connections.
-- __Wireshark/tcpdump__ - Brilliant for deep packet inspection, terrible for "just show me what domains we're hitting." You wanted monitoring, not a part-time job analyzing pcaps.
-- __Netflow/sFlow__ - Requires collectors, analyzers, and infrastructure. You wanted a simple tool, not a research project.
-- __Various commercial agents__ - Half of them want to send your data to their cloud. The other half require MySQL, Redis, and a small server farm to run the dashboard.
+- **Enterprise solutions** (Datadog, New Relic, etc.) - Overkill for simple egress visibility. You're not monitoring a fleet of 500 servers, you just want to see outbound connections.
+- **Wireshark/tcpdump** - Brilliant for deep packet inspection, terrible for "just show me what domains we're hitting." You wanted monitoring, not a part-time job analyzing pcaps.
+- **Netflow/sFlow** - Requires collectors, analyzers, and infrastructure. You wanted a simple tool, not a research project.
+- **Various commercial agents** - Half of them want to send your data to their cloud. The other half require MySQL, Redis, and a small server farm to run the dashboard.
 
 ### What This Does Instead
 
@@ -35,6 +35,7 @@ Sometimes the best tool is the one you actually finish and use.
 See [DESIGN.md](./DESIGN.md) for the full technical design and rationale.
 
 **TL;DR:**
+
 - **Agent** logs DNS (via dnsmasq) and IP egress (via iptables)
 - Cron jobs consolidate logs into two compact files (`unique-domains.log`, `unique-ips.log`)
 - **Collector** fetches these files and analyzes for anomalies
@@ -77,30 +78,28 @@ Currently the repo isn't built and released, so both modes require a git clone.
 - `git clone https://github.com/alexmorleyfinch/egress-monitor.git`
 - `cd egress-monitor/`
 - `git pull` - if you want to update
-- `sudo ./src/collector/install.sh` - idempotent install script (checks commands exist like `curl`, `dig`, `jq` etc)
 
 ### Collecting logs from the agent (from the collector)
 
-> NOTE this needs improving
-- `ssh user@my-box cat /var/log/egress-monitor/unique-ips.log`
-- `ssh user@my-box cat /var/log/egress-monitor/unique-domains.log`
+You need to have access to the Agent server via ssh, like `ssh alex@kai`
 
-### Eventually... TODO
+- `./src/collector/fetch.sh alex@kai` - use any ssh user+alias to a server running the agent
 
-Pipe raw logs to the collector for analysis:
+Helper scripts:
 
-- `ssh user@my-box cat /var/log/egress-monitor/unique-ips.log | ./src/collector/unique-ips/status.sh` 
-- `ssh user@my-box cat /var/log/egress-monitor/unique-domains.log | ./src/collector/unique-domains/status.sh`
-
-Get identification information for a specific domain or IP:
-
-- `./src/collector/identify.sh -d example.com`
-- `./src/collector/identify.sh -i 11.22.33.44`
+- `./src/collector/ptr_lookup.sh 11.22.33.44` - PTR response
+- `./src/collector/rdap_lookup.sh 11.22.33.44` - raw RDAP response
+- `./src/collector/rdap_lookup.sh 11.22.33.44 | ./src/collector/rdap_name.sh` - best guess at name
+- `./src/collector/rdap_lookup.sh 11.22.33.44 | ./src/collector/rdap_readable.sh` - simplified RDAP json
 
 ## TODO
 
+Agent:
+
 - [Low] Installation via git clone is a pain, make a release
-
-## Known issues
-
 - [Med] Timestamps in domain logs are inconsistent with the IP logs
+
+Collector:
+
+- [Med] We need caching and more efficient enriching
+- [Med] We need filtering and domain whitelist
