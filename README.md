@@ -1,6 +1,6 @@
 # Egress Monitor
 
-Monitors the network Egress and DNS.
+Logs & collects network egress traffic.
 
 ## Why This Exists
 
@@ -30,24 +30,63 @@ It was a fun side project that took an afternoon instead of spending three days 
 
 Sometimes the best tool is the one you actually finish and use.
 
-## Dependencies
+## Requirements
 
-- `dig` (for reverse DNS lookups)
+### Agent dependencies
+
+- `dnsmasq` (for logging DNS queries)
+- `iptables` (for logging egress traffic)
+- `journalctl` (for logging network activity)
+- `cron` (for running the consolidation script)
+
+### Collector dependencies
+
 - `curl` (for RDAP lookups)
+- `dig` (for reverse DNS lookups)
 - `jq` (for parsing JSON)
 
-and:
+## Usage
 
-- `git` (for deployment)
+The repo comes with two use-cases:
 
-## Deployment
+- Agent: Runs on the box you want to monitor, minimal dependencies, lean & mean.
+- Collector: Runs on a separate machine, consumes logs from the agent.
 
-Maybe one day we'll make a tarball or something.
+Currently the repo isn't built and released, so both modes require a git clone.
+
+### Agent deployment (on the box you want to monitor)
 
 - `git clone https://github.com/alexmorleyfinch/egress-monitor.git`
-- `egress-monitor/install.sh`
+- `cd egress-monitor/`
+- `git pull` - if you want to update
+- `./src/agent/install.sh` - idempotent install script
+- `./src/agent/uninstall.sh` - idempotent uninstall script
 
+### Collector deployment (local machine)
 
-# Usage
+- `git clone https://github.com/alexmorleyfinch/egress-monitor.git`
+- `cd egress-monitor/`
+- `git pull` - if you want to update
+- `./src/collector/install.sh` - idempotent install script (checks commands exist like `curl`, `dig`, `jq` etc)
 
-TODO
+### Collecting logs from the agent (from the collector)
+
+> NOTE this needs improving
+- `ssh user@my-box cat /var/log/egress-monitor/unique-ips.log`
+- `ssh user@my-box cat /var/log/egress-monitor/unique-domains.log`
+
+### Eventually... TODO
+
+Pipe raw logs to the collector for analysis:
+
+- `ssh user@my-box cat /var/log/egress-monitor/unique-ips.log | ./src/collector/unique-ips/status.sh` 
+- `ssh user@my-box cat /var/log/egress-monitor/unique-domains.log | ./src/collector/unique-domains/status.sh`
+
+Get identification information for a specific domain or IP:
+
+- `./src/collector/identify.sh -d example.com`
+- `./src/collector/identify.sh -i 11.22.33.44`
+
+## TODO
+
+- Maybe one day we'll make a tarball or something

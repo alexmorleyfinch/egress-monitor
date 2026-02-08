@@ -1,8 +1,6 @@
-# Solution
+# Egress Monitor Solution
 
-## Egress Monitor
-
-### What it does
+## What it should do
 
 We want to monitor outgoing network connections. We can't log the entire request/response because that gets too big, too fast.
 
@@ -21,11 +19,41 @@ That means, any egress that reaches to unexpected domains, or IP's directly is w
 
 Despite all this complexity and all the attacker workarounds, at the end of the day, we can monitor system DNS and IP egress to detect "weird behaviour", just by monitoring internal DNS and IP egress.
 
-### How it works
+__Minimal spec__: Efficiently monitor internal DNS and IP egress.
 
-- Monitor DNS via dnsmasq, log requests and IP resolutions. Prevent logs getting out of hand (log rotate), Store only what's needed (unique domain to IP mappings with timestamp)
+## How it should work
 
-- Monitor IP egress via journalctl, grepping for EGRESS: lines. journalctl manages log rotation, Store only what's needed (unique IP's with count and timestamp)
+- We dont want to lose information, and we don't want logs exploding is size, so we must _aggregate_ logs into a smaller set of files.
+- We use CRON jobs to scrape unread logs and append stats to our aggregate files.
+
+### Monitor DNS Egress
+
+We can't get good logs from the system resolver, so we use `dnsmasq` to log DNS requests:
+
+- Use logrotate to stop dnsmasq logs getting out of hand.
+- We replace the systemd-resolved service config to point to dnsmasq, which points to the same upstream DNS servers.
+
+#### Unique domains file
+
+> /var/log/egress-monitor/unique-domains.log
+
+```
+[domain] [count] [timestamp] [...comma_separated_IPs]
+```
+
+### Monitor IP Egress
+
+We can get `iptables` to log egress to journalctl:
+
+- `journalcrl` already manages log rotation
+
+#### Unique IPs file
+
+> /var/log/egress-monitor/unique-ips.log
+
+```
+[ip] [count] [timestamp]
+```
 
 So we have two systems relying on logging, with log rotation handles, generating 2 files:
 
@@ -34,17 +62,8 @@ So we have two systems relying on logging, with log rotation handles, generating
 
 These files are constantly updated. We don't want to grep the logs from scratch each time. We store a cursor and read only the new lines from dnsmasq and journalctl. These two files are the jackpot.
 
-So we have:
-- Two raw log files filling up.
-- The system rotating, compressing and deleting old logs.
-- CRON jobs checking each file, only processing new lines from the cursor, never missing any lines.
-- CRON updating the jackpot files that grow exponentially slower than the raw logs.
-- Periodic fetching of the jackpot files by some other host for analysis.
-- Periodic wiping of the jackpot files, manually initiated on another host.
-- Periodic config updates to the server, adding new domains/IPs to ignore (because they're expected).
-- Some other host can periodically download the jackpot files and analyze them, decide whether to alert or not.
 
-### What we're looking for
+### Poll these logs from collectors and analyze them
 
 The analysis of these files shouldn't happen on server. The server just needs to collect the data. Some other process will pull and analyze the data.
 
